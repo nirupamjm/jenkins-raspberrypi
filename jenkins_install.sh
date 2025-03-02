@@ -45,4 +45,26 @@ echo "Jenkins is installed and running on: http://$IP_ADDRESS:8080"
 
 # Display initial Jenkins admin password
 echo "Fetching initial admin password..."
-sudo cat /var/lib/jenkins/secrets/initialAdminPassword
+INITIAL_ADMIN_PASSWORD=$(sudo cat /var/lib/jenkins/secrets/initialAdminPassword)
+echo "Initial Admin Password: $INITIAL_ADMIN_PASSWORD"
+
+# Wait for Jenkins to fully start
+echo "Waiting for Jenkins to be ready..."
+sleep 60
+
+# Download Jenkins CLI
+echo "Downloading Jenkins CLI..."
+wget -O jenkins-cli.jar http://localhost:8080/jnlpJars/jenkins-cli.jar
+
+# Install recommended plugins
+echo "Installing recommended plugins..."
+java -jar jenkins-cli.jar -s http://localhost:8080/ -auth admin:$INITIAL_ADMIN_PASSWORD install-plugin $(curl -sS https://raw.githubusercontent.com/jenkinsci/jenkins/master/core/src/main/resources/jenkins/install/platform-plugins.json | jq -r '.plugins[].name')
+
+echo "Jenkins setup complete!"
+
+###cloudfare installation
+wget https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-arm -O cloudflared
+chmod +x cloudflared
+sudo mv cloudflared /usr/local/bin/
+cloudflared --version  # Verify installation
+cloudflared tunnel --url http://localhost:8080
